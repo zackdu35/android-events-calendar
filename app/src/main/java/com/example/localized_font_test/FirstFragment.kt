@@ -1,7 +1,7 @@
 package com.example.localized_font_test
 
-import android.net.Uri
 import android.os.Bundle
+import android.provider.CalendarContract
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,11 +15,14 @@ import java.util.*
  */
 class FirstFragment : Fragment() {
 
+    ///////////////////////////////////////////////////////////////////////////
+    // LIFECYCLE
+    ///////////////////////////////////////////////////////////////////////////
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_first, container, false)
     }
 
@@ -28,48 +31,40 @@ class FirstFragment : Fragment() {
         readCalendarEntries()
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    ///////////////////////////////////////////////////////////////////////////
+
     private fun readCalendarEntries() {
-        val cr = requireContext().contentResolver
-        val cursor = cr.query(
-            Uri.parse("content://com.android.calendar/events"),
-            arrayOf(
-                "calendar_id",
-                "title",
-                "description",
-                "dtstart",
-                "dtend",
-                "eventLocation"
-            ),
-            null,
-            null,
-            null
+        val contentResolver = requireContext().contentResolver
+        val providerUri = CalendarContract.Events.CONTENT_URI
+        val projection = arrayOf(
+            CalendarContract.Events.CALENDAR_ID,
+            CalendarContract.Events.TITLE,
+            CalendarContract.Events.DESCRIPTION,
+            CalendarContract.Events.DTSTART,
+            CalendarContract.Events.DTEND,
+            CalendarContract.Events.EVENT_LOCATION
         )
-        //Cursor cursor = cr.query(Uri.parse("content://calendar/calendars"), new String[]{ "_id", "name" }, null, null, null);
-        //Cursor cursor = cr.query(Uri.parse("content://calendar/calendars"), new String[]{ "_id", "name" }, null, null, null);
+        val cursor = contentResolver.query(providerUri, projection, null, null, null)
+
         cursor?.apply {
-            var add: String? = null
             moveToFirst()
-            val CalNames = arrayOfNulls<String>(cursor.getCount())
-            val CalIds = IntArray(cursor.getCount())
-            for (i in CalNames.indices) {
-                CalIds[i] = cursor.getInt(0)
-                CalNames[i] =
-                    """
-                    Event${cursor.getInt(0).toString()}: 
-                    Title: 
-                    """.trimIndent() + cursor.getString(1)
-                        .toString() + "\nDescription: " + cursor.getString(2)
-                        .toString() + "\nStart Date: " + Date(cursor.getLong(3)).toString() + "\nEnd Date : " + Date(
-                        cursor.getLong(4)
-                    ).toString() + "\nLocation : " + cursor.getString(5)
-                if (add == null) add = CalNames[i] else {
-                    add += CalNames[i]
-                }
-                events.text = add
-                cursor.moveToNext()
+            val events = arrayOfNulls<String>(count)
+            events.map {
+                val id = getInt(0)
+                val title = getString(1)
+                val desc = getString(2)
+                val startDate = Date(getLong(3))
+                val endDate = Date(getLong(4))
+                val location = getString(5)
+                eventsTv.append(
+                    "Id : $id \nTitle : $title \nDesc : $desc \nStart Date : $startDate \nEnd Date : $endDate \nLocation : $location" +
+                            "\n----------\n"
+                )
+                moveToNext()
             }
             close()
         }
-
     }
 }
