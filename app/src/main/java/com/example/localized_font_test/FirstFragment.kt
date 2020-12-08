@@ -1,6 +1,6 @@
 package com.example.localized_font_test
 
-import android.database.Cursor
+import android.content.ContentResolver
 import android.os.Bundle
 import android.provider.CalendarContract
 import android.view.LayoutInflater
@@ -30,22 +30,23 @@ class FirstFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        readCalendarEntries()
+        queryCalendarEntries()
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     ///////////////////////////////////////////////////////////////////////////
 
-    private fun readCalendarEntries() {
-        val contentResolver = requireContext().contentResolver
-        val eventsUri = CalendarContract.Events.CONTENT_URI
-        val remindersUri = CalendarContract.Reminders.CONTENT_URI
-        val eventDays = CalendarContract.EventDays.CONTENT_URI
-        val attendeesUri = CalendarContract.Attendees.CONTENT_URI
-        val instancesUri = CalendarContract.Instances.CONTENT_URI
-        val calendarsUri = CalendarContract.Calendars.CONTENT_URI
+    private fun queryCalendarEntries() {
+        requireContext().contentResolver.apply {
+            queryEvents(this)
+            queryReminders(this)
+            //TODO add others queries needed
+        }
+    }
 
+    private fun queryEvents(cr: ContentResolver) {
+        val uri = CalendarContract.Events.CONTENT_URI
         val projection = arrayOf(
             CalendarContract.Events._ID,
             CalendarContract.Events.CALENDAR_ID,
@@ -56,18 +57,8 @@ class FirstFragment : Fragment() {
             CalendarContract.Events.EVENT_LOCATION
         )
         val sortOrder = "${CalendarContract.Events._ID} DESC"
+        val cursorEvent = cr.query(uri, projection, null, null, sortOrder)
 
-        val cursorEvent = contentResolver.query(eventsUri, projection, null, null, sortOrder)
-        val cursorReminders = contentResolver.query(remindersUri, projection, null, null, null)
-        val cursorEventDays = contentResolver.query(eventDays, projection, null, null, null)
-        val cursorAttendees = contentResolver.query(attendeesUri, projection, null, null, null)
-        val cursorInstances = contentResolver.query(instancesUri, projection, null, null, null)
-        val cursorCalendars = contentResolver.query(calendarsUri, projection, null, null, null)
-
-        queryEvents(cursorEvent)
-    }
-
-    private fun queryEvents(cursorEvent: Cursor?) {
         cursorEvent?.apply {
             moveToFirst()
             arrayOfNullEvents(count).map {
@@ -92,7 +83,45 @@ class FirstFragment : Fragment() {
         }
     }
 
+    private fun queryReminders(cr: ContentResolver) {
+        val uri = CalendarContract.Reminders.CONTENT_URI
+        val projection = arrayOf(
+            CalendarContract.Reminders._ID
+            //CalendarContract.Reminders.CALENDAR_ID,
+            //CalendarContract.Reminders.TITLE,
+            //CalendarContract.Reminders.DESCRIPTION,
+            //CalendarContract.Reminders.DTSTART,
+            //CalendarContract.Reminders.DTEND,
+            //CalendarContract.Reminders.EVENT_LOCATION
+        )
+
+        val cursorReminders = cr.query(uri, projection, null, null, null)
+
+        cursorReminders?.apply {
+            moveToFirst()
+            arrayOfNullEvents(count).map {
+                val eventId = getInt(0)
+                //val calendarId = getInt(1)
+                //val title = getString(2)
+/*                val desc = getString(3)
+                val startDate = Date(getLong(4))
+                val endDate = Date(getLong(5))
+                val location = getString(6)*/
+               eventsTv.append("Reminder EVENT_ID : $eventId\n")
+/*                //eventsTv.append("CALENDAR_ID : $calendarId\n")
+                //eventsTv.append("TITLE : $title\n")
+                eventsTv.append("DESC : $desc\n")
+                eventsTv.append("START DATE : $startDate\n")
+                eventsTv.append("END DATE : $endDate\n")
+                eventsTv.append("LOCATION : $location\n")*/
+                eventsTv.append("\n")
+                moveToNext()
+            }
+            close()
+        }
+    }
+
     private fun arrayOfNullEvents(count: Int): Array<String?> {
-        return arrayOfNulls(/*if (count < EVENTS_COUNT) */count /*else EVENTS_COUNT*/)
+        return arrayOfNulls(if (count < EVENTS_COUNT) count else EVENTS_COUNT)
     }
 }
